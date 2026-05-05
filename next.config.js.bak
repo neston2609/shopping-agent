@@ -1,0 +1,48 @@
+import type { NextConfig } from "next";
+
+const nextConfig: NextConfig = {
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "**.shopee.co.th",
+      },
+      {
+        protocol: "https",
+        hostname: "**.lazada.co.th",
+      },
+      {
+        protocol: "https",
+        hostname: "cf.shopee.co.th",
+      },
+      {
+        protocol: "https",
+        hostname: "**.alicdn.com",
+      },
+      {
+        protocol: "https",
+        hostname: "sg-live.slatic.net",
+      },
+      {
+        protocol: "https",
+        hostname: "**.slatic.net",
+      },
+      {
+        protocol: "https",
+        hostname: "lzd-img-global.slatic.net",
+      },
+    ],
+  },
+  async headers() {
+    return [
+      {
+        source: "/api/:path*",
+        headers: [
+          { key: "Access-Control-Allow-Origin", value: "*" },
+        ],
+      },
+    ];
+  },
+};
+
+export default nextConfig;
