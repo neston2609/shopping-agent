@@ -31,10 +31,11 @@ async function verifyToken(token: string, secret: string): Promise<boolean> {
       false,
       ["verify"]
     );
+    const sigBytes = hexToBytes(sigHex);
     const valid = await crypto.subtle.verify(
       "HMAC",
       key,
-      hexToBytes(sigHex),
+      sigBytes.buffer as ArrayBuffer,
       enc.encode(payload)
     );
     if (!valid) return false;
