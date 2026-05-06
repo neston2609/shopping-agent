@@ -91,7 +91,12 @@ async function searchViaOpenPlatform(
 
         // Open Platform prices are in "price unit" (×100000 for THB, same as web API)
         const rawPrice: number =
-          item.price_min ?? item.price_max ?? item.price ?? 0;
+          item.price_min ??
+          item.price ??
+          item.price_max ??
+          item.price_before_discount ??
+          item.original_price ??
+          0;
         const price = rawPrice > 10_000 ? rawPrice / 100_000 : rawPrice;
 
         let image: string = item.image ?? item.item_image ?? item.cover ?? "";
@@ -204,7 +209,8 @@ async function scrapeShopeeBrowser(keyword: string): Promise<RawProduct[]> {
   try {
     // Visit homepage first to establish a real session
     await page.goto(SHOPEE_BASE + "/", { waitUntil: "domcontentloaded", timeout: TIMEOUT });
-    await page.waitForTimeout(1500);
+    // Wait for the page to settle before navigating away
+    await page.waitForLoadState("networkidle", { timeout: 10_000 }).catch(() => {});
 
     // Navigate to search within the same session
     await page.goto(
@@ -212,37 +218,52 @@ async function scrapeShopeeBrowser(keyword: string): Promise<RawProduct[]> {
       { waitUntil: "domcontentloaded", timeout: TIMEOUT }
     );
 
-    // Simulate human browsing
-    await page.waitForTimeout(1500);
-    await page.mouse.move(640, 400);
-    await page.evaluate(() => window.scrollTo({ top: 400, behavior: "smooth" }));
-    await page.waitForTimeout(1500);
-    await page.evaluate(() => window.scrollTo({ top: 800, behavior: "smooth" }));
-    await page.waitForTimeout(4000);
+    // Wait for the search page to finish its initial XHR burst before we
+    // interact — avoids "context destroyed" errors from mid-navigation evaluates
+    await page.waitForLoadState("networkidle", { timeout: 12_000 }).catch(() => {});
 
-    // Fallback: check window state
+    // Simulate human browsing (only scroll/mouse — no evaluate yet)
+    await page.mouse.move(640, 400);
+    await page.waitForTimeout(800);
+    try {
+      await page.evaluate(() => window.scrollTo({ top: 400, behavior: "smooth" }));
+    } catch { /* page may have navigated — safe to ignore */ }
+    await page.waitForTimeout(1000);
+    try {
+      await page.evaluate(() => window.scrollTo({ top: 800, behavior: "smooth" }));
+    } catch { /* ignore */ }
+
+    // Give the network one more settle after scrolling
+    await page.waitForLoadState("networkidle", { timeout: 8_000 }).catch(() => {});
+
+    // Fallback: read window state — wrapped in its own try/catch so a
+    // mid-flight navigation doesn't abort the whole scrape
     if (rawItems.length === 0) {
-      rawItems = await page.evaluate(() => {
-        const win = window as any;
-        for (const root of [win.__SHOPEE_INIT_DATA__, win.__PRELOADED_STATE__]) {
-          if (!root) continue;
-          const sections =
-            root?.fetchedSearchResult?.searchSections ??
-            root?.searchResult?.searchSections;
-          if (Array.isArray(sections)) {
-            for (const s of sections) {
-              const items = s?.data?.item;
-              if (Array.isArray(items) && items.length > 0)
-                return items.map((i: any) => ({ item_basic: i }));
+      try {
+        rawItems = await page.evaluate(() => {
+          const win = window as any;
+          for (const root of [win.__SHOPEE_INIT_DATA__, win.__PRELOADED_STATE__]) {
+            if (!root) continue;
+            const sections =
+              root?.fetchedSearchResult?.searchSections ??
+              root?.searchResult?.searchSections;
+            if (Array.isArray(sections)) {
+              for (const s of sections) {
+                const items = s?.data?.item;
+                if (Array.isArray(items) && items.length > 0)
+                  return items.map((i: any) => ({ item_basic: i }));
+              }
             }
           }
-        }
-        return [];
-      });
+          return [];
+        });
+      } catch (evalErr) {
+        console.warn("[shopee-scraper] window-state evaluate failed (navigation race):", (evalErr as Error).message);
+      }
     }
 
     if (rawItems.length === 0) {
-      const title = await page.title();
+      const title = await page.title().catch(() => "(unknown)");
       console.warn(`[shopee-scraper] Browser fallback: no products. Title="${title}"`);
       return [];
     }
@@ -253,8 +274,27 @@ async function scrapeShopeeBrowser(keyword: string): Promise<RawProduct[]> {
         try {
           const basic = item.item_basic ?? item;
           const title: string = basic.name ?? "";
-          const rawPrice: number = basic.price ?? basic.price_min ?? 0;
+
+          // Shopee encodes prices as integer × 100 000 (e.g. 159000000 = ฿1,590).
+          // Try fields in priority order; fall back to 0 only if none present.
+          const rawPrice: number =
+            basic.price ??
+            basic.price_min ??
+            basic.price_before_discount ??
+            basic.original_price ??
+            basic.min_price ??
+            basic.max_price ??
+            basic.price_max ??
+            0;
           const price = rawPrice > 10_000 ? rawPrice / 100_000 : rawPrice;
+
+          if (price === 0) {
+            console.warn(
+              "[shopee-scraper] Zero-price item — raw keys:",
+              Object.keys(basic).filter((k) => k.toLowerCase().includes("price"))
+            );
+          }
+
           const imageId: string =
             (Array.isArray(basic.images) ? basic.images[0] : null) ?? basic.image ?? "";
           const image = imageId
