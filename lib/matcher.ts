@@ -32,15 +32,15 @@ export function mergeProducts(rawProducts: RawProduct[]): Product[] {
     let bestScore = 0;
     let bestIdx = -1;
 
-    lazadaItems.forEach((lazItem, idx) => {
-      if (usedLazada.has(idx)) return;
-      const score = similarity(shopeeItem.title, lazItem.title);
+    for (let idx = 0; idx < lazadaItems.length; idx++) {
+      if (usedLazada.has(idx)) continue;
+      const score = similarity(shopeeItem.title, lazadaItems[idx].title);
       if (score > bestScore) {
         bestScore = score;
-        bestMatch = lazItem;
+        bestMatch = lazadaItems[idx];
         bestIdx = idx;
       }
-    });
+    }
 
     const offers: Offer[] = [
       {
