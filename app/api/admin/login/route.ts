@@ -31,9 +31,13 @@ export async function POST(request: NextRequest) {
     const token = createSessionToken(secret);
 
     const res = NextResponse.json({ ok: true });
+    // secure:true requires HTTPS — if the site runs on plain HTTP in
+    // production the cookie will be set but the browser will never send
+    // it back, breaking the session. Use the HTTPS env flag to opt in.
+    const isHttps = process.env.FORCE_HTTPS === "true";
     res.cookies.set(SESSION_COOKIE, token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: isHttps,
       sameSite: "lax",
       maxAge: 60 * 60 * 24, // 24 hours
       path: "/",

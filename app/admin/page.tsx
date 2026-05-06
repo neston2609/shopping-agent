@@ -1,13 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 
 export default function AdminLoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -23,7 +21,11 @@ export default function AdminLoginPage() {
       if (!res.ok) {
         setError(data.error ?? "Login failed");
       } else {
-        router.push("/admin/dashboard");
+        // Full page load so the browser sends the new session cookie
+        // to the middleware before rendering the dashboard.
+        // router.push() does client-side navigation and the cookie
+        // arrives too late, causing an immediate redirect back here.
+        window.location.href = "/admin/dashboard";
       }
     } catch {
       setError("Network error — please try again");

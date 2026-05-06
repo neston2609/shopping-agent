@@ -76,18 +76,49 @@ function resolveShareUrl(affiliateUrl: string): string {
   return affiliateUrl;
 }
 
+function copyToClipboard(text: string): boolean {
+  // Modern API — requires HTTPS or localhost
+  if (navigator.clipboard?.writeText) {
+    navigator.clipboard.writeText(text).catch(() => {/* handled below */});
+    return true;
+  }
+  // Legacy fallback — works over plain HTTP
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.cssText = "position:fixed;top:0;left:0;opacity:0;pointer-events:none";
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    const ok = document.execCommand("copy");
+    document.body.removeChild(ta);
+    return ok;
+  } catch {
+    return false;
+  }
+}
+
 function CopyLinkButton({ affiliateUrl }: { affiliateUrl: string }) {
   const [state, setState] = useState<"idle" | "copied" | "error">("idle");
 
   async function handleCopy() {
-    try {
-      await navigator.clipboard.writeText(resolveShareUrl(affiliateUrl));
-      setState("copied");
-      setTimeout(() => setState("idle"), 2000);
-    } catch {
-      setState("error");
-      setTimeout(() => setState("idle"), 2000);
+    const text = resolveShareUrl(affiliateUrl);
+    let ok = false;
+
+    if (navigator.clipboard?.writeText) {
+      try {
+        await navigator.clipboard.writeText(text);
+        ok = true;
+      } catch {
+        // permission denied — try legacy fallback
+        ok = copyToClipboard(text);
+      }
+    } else {
+      ok = copyToClipboard(text);
     }
+
+    setState(ok ? "copied" : "error");
+    setTimeout(() => setState("idle"), 2000);
   }
 
   return (
