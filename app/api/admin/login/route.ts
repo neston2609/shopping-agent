@@ -21,7 +21,6 @@ export async function POST(request: NextRequest) {
 
     const ok = await verifyPassword(password, storedHash);
     if (!ok) {
-      // Small delay to blunt brute-force
       await new Promise((r) => setTimeout(r, 500));
       return NextResponse.json({ error: "Invalid password" }, { status: 401 });
     }
@@ -31,17 +30,17 @@ export async function POST(request: NextRequest) {
     const token = createSessionToken(secret);
 
     const res = NextResponse.json({ ok: true });
-    // secure:true requires HTTPS — if the site runs on plain HTTP in
-    // production the cookie will be set but the browser will never send
-    // it back, breaking the session. Use the HTTPS env flag to opt in.
-    const isHttps = process.env.FORCE_HTTPS === "true";
+
+    // secure: true requires HTTPS. On plain HTTP the browser sets the cookie
+    // but never sends it back, so the middleware always sees no session.
     res.cookies.set(SESSION_COOKIE, token, {
       httpOnly: true,
-      secure: isHttps,
+      secure: false,
       sameSite: "lax",
-      maxAge: 60 * 60 * 24, // 24 hours
+      maxAge: 60 * 60 * 24,
       path: "/",
     });
+
     return res;
   } catch (err) {
     console.error("[admin/login]", err);
