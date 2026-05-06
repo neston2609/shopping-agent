@@ -86,7 +86,7 @@ function extractPageDataFromHtml(html: string): any {
   }
 
   // 3. Scan ALL inline <script> blocks for any JSON containing product signals
-  const scriptRe = /<script(?:\s[^>]*)?>([^<]{200,})<\/script>/gs;
+  const scriptRe = /<script(?:\s[^>]*)?>([^<]{200,})<\/script>/g;
   let m: RegExpExecArray | null;
   while ((m = scriptRe.exec(html)) !== null) {
     const src = m[1].trim();
