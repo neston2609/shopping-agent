@@ -9,6 +9,8 @@ interface AffiliateConfig {
   shopee_affiliate_id: string;
   lazada_app_key: string;
   lazada_tracking_id: string;
+  shopee_enabled: string;
+  lazada_enabled: string;
 }
 
 interface Analytics {
@@ -84,6 +86,8 @@ function AffiliateTab() {
     shopee_affiliate_id: "",
     lazada_app_key: "",
     lazada_tracking_id: "",
+    shopee_enabled: "true",
+    lazada_enabled: "true",
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -136,6 +140,70 @@ function AffiliateTab() {
     <>
       {toast && <Toast msg={toast.msg} type={toast.type} />}
       <form onSubmit={handleSave} className="max-w-2xl space-y-6">
+        {/* ── Platform Toggles ── */}
+        <div>
+          <h3 className="text-lg font-semibold text-gray-800 mb-1">Platform Settings</h3>
+          <p className="text-sm text-gray-500 mb-4">
+            Enable or disable scraping for each platform. Disabled platforms are skipped entirely during search.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Shopee toggle */}
+            <div className="flex items-center justify-between bg-white border border-gray-100 rounded-2xl px-5 py-4 shadow-sm">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-shopee flex items-center justify-center text-white font-extrabold text-sm">S</div>
+                <div>
+                  <p className="font-semibold text-gray-800 text-sm">Shopee</p>
+                  <p className={`text-xs font-medium ${config.shopee_enabled === "true" ? "text-green-500" : "text-gray-400"}`}>
+                    {config.shopee_enabled === "true" ? "Enabled" : "Disabled"}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setConfig((c) => ({ ...c, shopee_enabled: c.shopee_enabled === "true" ? "false" : "true" }))}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-shopee ${
+                  config.shopee_enabled === "true" ? "bg-shopee" : "bg-gray-200"
+                }`}
+                aria-label="Toggle Shopee"
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform ${
+                    config.shopee_enabled === "true" ? "translate-x-6" : "translate-x-1"
+                  }`}
+                />
+              </button>
+            </div>
+
+            {/* Lazada toggle */}
+            <div className="flex items-center justify-between bg-white border border-gray-100 rounded-2xl px-5 py-4 shadow-sm">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-lazada flex items-center justify-center text-white font-extrabold text-sm">L</div>
+                <div>
+                  <p className="font-semibold text-gray-800 text-sm">Lazada</p>
+                  <p className={`text-xs font-medium ${config.lazada_enabled === "true" ? "text-green-500" : "text-gray-400"}`}>
+                    {config.lazada_enabled === "true" ? "Enabled" : "Disabled"}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setConfig((c) => ({ ...c, lazada_enabled: c.lazada_enabled === "true" ? "false" : "true" }))}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-lazada ${
+                  config.lazada_enabled === "true" ? "bg-lazada" : "bg-gray-200"
+                }`}
+                aria-label="Toggle Lazada"
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform ${
+                    config.lazada_enabled === "true" ? "translate-x-6" : "translate-x-1"
+                  }`}
+                />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Affiliate IDs ── */}
         <div>
           <h3 className="text-lg font-semibold text-gray-800 mb-1">Affiliate IDs</h3>
           <p className="text-sm text-gray-500 mb-6">

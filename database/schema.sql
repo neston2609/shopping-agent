@@ -73,4 +73,6 @@ INSERT INTO admin_config (key, value) VALUES
   ('shopee_affiliate_id',      '')
   ,('lazada_app_key',          '')
   ,('lazada_tracking_id',      '')
+  ,('shopee_enabled',          'true')
+  ,('lazada_enabled',          'true')
 ON CONFLICT (key) DO NOTHING;

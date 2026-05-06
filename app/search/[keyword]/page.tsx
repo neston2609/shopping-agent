@@ -6,6 +6,7 @@ import { getCached, setCached } from "@/lib/cache";
 import { scrapeShopee } from "@/lib/scrapers/shopee";
 import { scrapeLazada } from "@/lib/scrapers/lazada";
 import { mergeProducts } from "@/lib/matcher";
+import { getConfig } from "@/lib/admin-config";
 import type { Product } from "@/types/product";
 
 interface Props {
@@ -41,18 +42,22 @@ async function getProducts(keyword: string): Promise<{ products: Product[]; cach
   const cached = getCached(keyword);
   if (cached) return { products: cached, cached: true };
 
-  // Scrape both platforms concurrently; handle partial failures
-  const [shopeeResult, lazadaResult] = await Promise.allSettled([
-    scrapeShopee(keyword),
-    scrapeLazada(keyword),
+  // Read platform enabled flags from admin config
+  const [shopeeEnabled, lazadaEnabled] = await Promise.all([
+    getConfig("shopee_enabled", "true").then((v) => v !== "false"),
+    getConfig("lazada_enabled", "true").then((v) => v !== "false"),
   ]);
 
-  if (shopeeResult.status === "rejected") {
+  // Scrape enabled platforms only
+  const [shopeeResult, lazadaResult] = await Promise.allSettled([
+    shopeeEnabled ? scrapeShopee(keyword) : Promise.resolve([]),
+    lazadaEnabled ? scrapeLazada(keyword) : Promise.resolve([]),
+  ]);
+
+  if (shopeeResult.status === "rejected")
     console.error("[search-page] Shopee scrape failed:", shopeeResult.reason);
-  }
-  if (lazadaResult.status === "rejected") {
+  if (lazadaResult.status === "rejected")
     console.error("[search-page] Lazada scrape failed:", lazadaResult.reason);
-  }
 
   const allRaw = [
     ...(shopeeResult.status === "fulfilled" ? shopeeResult.value : []),
