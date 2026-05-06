@@ -7,6 +7,8 @@ import { useRouter } from "next/navigation";
 
 interface AffiliateConfig {
   shopee_affiliate_id: string;
+  shopee_partner_id: string;
+  shopee_partner_key: string;
   lazada_app_key: string;
   lazada_tracking_id: string;
   shopee_enabled: string;
@@ -84,6 +86,8 @@ function Toast({ msg, type }: { msg: string; type: "success" | "error" }) {
 function AffiliateTab() {
   const [config, setConfig] = useState<AffiliateConfig>({
     shopee_affiliate_id: "",
+    shopee_partner_id: "",
+    shopee_partner_key: "",
     lazada_app_key: "",
     lazada_tracking_id: "",
     shopee_enabled: "true",
@@ -213,30 +217,87 @@ function AffiliateTab() {
         </div>
 
         {/* Shopee */}
-        <div className="bg-shopee-light border border-shopee/20 rounded-2xl p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-xl bg-shopee flex items-center justify-center text-white font-extrabold">S</div>
-            <div>
-              <p className="font-bold text-shopee">Shopee Thailand</p>
-              <p className="text-xs text-gray-500">affiliate.shopee.co.th</p>
+        <div className="bg-shopee-light border border-shopee/20 rounded-2xl p-6 space-y-5">
+          {/* Header + mode badge */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-shopee flex items-center justify-center text-white font-extrabold">S</div>
+              <div>
+                <p className="font-bold text-shopee">Shopee Thailand</p>
+                <p className="text-xs text-gray-500">shopee.co.th</p>
+              </div>
+            </div>
+            {/* Show current mode: API or Browser */}
+            {config.shopee_partner_id && config.shopee_partner_key ? (
+              <span className="inline-flex items-center gap-1.5 bg-green-50 text-green-700 border border-green-200 text-xs font-semibold px-3 py-1 rounded-full">
+                <span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block" />
+                Open Platform API
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 bg-amber-50 text-amber-700 border border-amber-200 text-xs font-semibold px-3 py-1 rounded-full">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block" />
+                Browser fallback
+              </span>
+            )}
+          </div>
+
+          {/* Affiliate ID (for link generation) */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              Affiliate ID
+              <span className="ml-1.5 text-xs text-gray-400 font-normal">(used in affiliate links)</span>
+            </label>
+            <input
+              type="text"
+              value={config.shopee_affiliate_id}
+              onChange={(e) => setConfig((c) => ({ ...c, shopee_affiliate_id: e.target.value }))}
+              placeholder="e.g. 15351330080"
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-shopee focus:border-transparent text-sm font-mono"
+            />
+            <p className="text-xs text-gray-400 mt-1.5">
+              Get yours at{" "}
+              <a href="https://affiliate.shopee.co.th" target="_blank" rel="noopener noreferrer" className="text-shopee underline">
+                affiliate.shopee.co.th
+              </a>
+            </p>
+          </div>
+
+          {/* Open Platform credentials */}
+          <div className="border-t border-shopee/10 pt-4">
+            <p className="text-sm font-semibold text-gray-700 mb-1">
+              Open Platform API
+              <span className="ml-2 text-xs font-normal text-gray-400">(optional — enables faster, official search)</span>
+            </p>
+            <p className="text-xs text-gray-500 mb-3">
+              Register at{" "}
+              <a href="https://open.shopee.com" target="_blank" rel="noopener noreferrer" className="text-shopee underline">
+                open.shopee.com
+              </a>{" "}
+              to get a Partner ID and Partner Key. When configured, the scraper will use the official API instead of browser automation.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Partner ID</label>
+                <input
+                  type="text"
+                  value={config.shopee_partner_id}
+                  onChange={(e) => setConfig((c) => ({ ...c, shopee_partner_id: e.target.value }))}
+                  placeholder="e.g. 1234567"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-shopee focus:border-transparent text-sm font-mono"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Partner Key</label>
+                <input
+                  type="password"
+                  value={config.shopee_partner_key}
+                  onChange={(e) => setConfig((c) => ({ ...c, shopee_partner_key: e.target.value }))}
+                  placeholder="Your partner key / secret"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-shopee focus:border-transparent text-sm font-mono"
+                />
+              </div>
             </div>
           </div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">
-            Affiliate ID / Tracking Code
-          </label>
-          <input
-            type="text"
-            value={config.shopee_affiliate_id}
-            onChange={(e) => setConfig((c) => ({ ...c, shopee_affiliate_id: e.target.value }))}
-            placeholder="e.g. 15351330080"
-            className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-shopee focus:border-transparent text-sm font-mono"
-          />
-          <p className="text-xs text-gray-400 mt-2">
-            Get yours at{" "}
-            <a href="https://affiliate.shopee.co.th" target="_blank" rel="noopener noreferrer" className="text-shopee underline">
-              affiliate.shopee.co.th
-            </a>
-          </p>
         </div>
 
         {/* Lazada */}

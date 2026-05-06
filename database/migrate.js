@@ -81,14 +81,16 @@ async function migrate() {
     console.log("ℹ️  Admin password already set — skipping seed");
   }
 
-  // 4. Ensure platform-toggle keys exist (safe to run on existing DBs)
+  // 4. Ensure platform-toggle and Open Platform credential keys exist (safe to run on existing DBs)
   await pool.query(`
     INSERT INTO admin_config (key, value) VALUES
-      ('shopee_enabled', 'true'),
-      ('lazada_enabled', 'true')
+      ('shopee_enabled',    'true'),
+      ('lazada_enabled',    'true'),
+      ('shopee_partner_id', ''),
+      ('shopee_partner_key','')
     ON CONFLICT (key) DO NOTHING
   `);
-  console.log("✅ Platform toggle keys ensured");
+  console.log("✅ Platform toggle + Open Platform keys ensured");
 
   await pool.end();
   console.log("\n🎉 Migration complete — run: npm run dev");

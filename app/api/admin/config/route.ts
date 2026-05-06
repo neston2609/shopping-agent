@@ -5,6 +5,8 @@ export const dynamic = "force-dynamic";
 
 const AFFILIATE_KEYS = [
   "shopee_affiliate_id",
+  "shopee_partner_id",
+  "shopee_partner_key",
   "lazada_app_key",
   "lazada_tracking_id",
 ] as const;
@@ -43,7 +45,7 @@ export async function PUT(request: Request) {
     for (const key of TOGGLE_KEYS) {
       if (typeof body[key] === "string") {
         // Accept "true" / "false" strings or boolean-ish values
-        const val = body[key] === "true" || body[key] === true ? "true" : "false";
+        const val = body[key] === "true" || body[key] === "1" ? "true" : "false";
         await setConfig(key, val);
       }
     }
