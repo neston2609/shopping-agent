@@ -53,12 +53,35 @@ function buildOutUrl(offer: Offer, productTitle: string): string {
   );
 }
 
+/**
+ * Resolve the best shareable URL from an affiliate link.
+ *
+ * Lazada short-links (c.lazada.co.th/t/...) redirect to the homepage when
+ * the affiliate account is not yet fully activated.  The real product URL is
+ * already encoded in the short-link's ?url= param, so we extract it directly.
+ * Once the affiliate account is live the short-link will work on its own —
+ * at that point this helper can be removed or turned into a no-op.
+ */
+function resolveShareUrl(affiliateUrl: string): string {
+  try {
+    const parsed = new URL(affiliateUrl);
+    if (
+      parsed.hostname === "c.lazada.co.th" &&
+      parsed.pathname.startsWith("/t/")
+    ) {
+      const inner = parsed.searchParams.get("url");
+      if (inner) return inner; // e.g. https://www.lazada.co.th/products/...
+    }
+  } catch { /* fall through */ }
+  return affiliateUrl;
+}
+
 function CopyLinkButton({ affiliateUrl }: { affiliateUrl: string }) {
   const [state, setState] = useState<"idle" | "copied" | "error">("idle");
 
   async function handleCopy() {
     try {
-      await navigator.clipboard.writeText(affiliateUrl);
+      await navigator.clipboard.writeText(resolveShareUrl(affiliateUrl));
       setState("copied");
       setTimeout(() => setState("idle"), 2000);
     } catch {

@@ -34,3 +34,8 @@ next-env.d.ts
 # Playwright
 playwright-report/
 test-results/
+
+deploy.bat
+deploy.sh
+*.bak
+id.txt
