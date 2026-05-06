@@ -47,7 +47,7 @@ function StarRating({ rating }: { rating: number }) {
 
 function buildOutUrl(offer: Offer, productTitle: string): string {
   return (
-    `/api/out?url=${encodeURIComponent(offer.affiliateUrl)}` +
+    `/api/go?url=${encodeURIComponent(offer.affiliateUrl)}` +
     `&title=${encodeURIComponent(productTitle)}` +
     `&source=${offer.source}`
   );
