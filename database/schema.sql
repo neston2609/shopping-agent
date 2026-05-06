@@ -1,10 +1,8 @@
 -- ============================================================
 -- PriceWise TH — Database Schema
--- Run: psql $DATABASE_URL -f database/schema.sql
+-- Applied by: npm run db:migrate
+-- Manual:     psql $DATABASE_URL -f database/schema.sql
 -- ============================================================
-
-CREATE DATABASE shopping_comparison;
-\c shopping_comparison;
 
 -- Products (normalized, deduplicated)
 CREATE TABLE IF NOT EXISTS products (

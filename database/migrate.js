@@ -47,12 +47,17 @@ async function migrate() {
   const statements = schema
     .split(";")
     .map((s) => s.trim())
-    .filter(
-      (s) =>
-        s.length > 0 &&
-        !s.startsWith("CREATE DATABASE") &&
-        !s.startsWith("\\c")
-    );
+    .filter((s) => {
+      if (!s.length) return false;
+      // Strip SQL single-line comments before checking the command type,
+      // so a comment block above CREATE DATABASE doesn't fool the filter.
+      const cmd = s.replace(/--[^\n]*/g, "").trim().toUpperCase();
+      return (
+        cmd.length > 0 &&
+        !cmd.startsWith("CREATE DATABASE") &&
+        !cmd.startsWith("\\C")
+      );
+    });
 
   for (const stmt of statements) {
     await pool.query(stmt + ";");
