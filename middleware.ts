@@ -8,19 +8,11 @@ export const SESSION_COOKIE = "admin_session";
 
 // ─── Edge-compatible HMAC verification ───────────────────────────────────────
 
-function hexToBytes(hex: string): Uint8Array {
-  const bytes = new Uint8Array(hex.length / 2);
-  for (let i = 0; i < hex.length; i += 2) {
-    bytes[i / 2] = parseInt(hex.slice(i, i + 2), 16);
-  }
-  return bytes;
-}
-
 async function verifyToken(token: string, secret: string): Promise<boolean> {
   const dot = token.lastIndexOf(".");
   if (dot === -1) return false;
   const payload = token.slice(0, dot);
-  const sigHex = token.slice(dot + 1);
+  const sigHex  = token.slice(dot + 1);
 
   try {
     const enc = new TextEncoder();
@@ -29,19 +21,21 @@ async function verifyToken(token: string, secret: string): Promise<boolean> {
       enc.encode(secret),
       { name: "HMAC", hash: "SHA-256" },
       false,
-      ["verify"]
+      ["sign"]          // sign, then compare hex — avoids ArrayBuffer sizing issues
     );
-    const sigBytes = hexToBytes(sigHex);
-    const valid = await crypto.subtle.verify(
-      "HMAC",
-      key,
-      sigBytes.buffer as ArrayBuffer,
-      enc.encode(payload)
-    );
-    if (!valid) return false;
 
-    // Decode payload and check expiry (base64url → JSON)
-    const json = atob(payload.replace(/-/g, "+").replace(/_/g, "/"));
+    // Re-compute the expected HMAC and convert to hex
+    const sigBuffer = await crypto.subtle.sign("HMAC", key, enc.encode(payload));
+    const expectedHex = Array.from(new Uint8Array(sigBuffer))
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
+
+    if (expectedHex !== sigHex) return false;
+
+    // Decode payload: base64url → base64 (add padding) → JSON
+    const b64 = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = b64 + "=".repeat((4 - (b64.length % 4)) % 4);
+    const json = atob(padded);
     const { exp } = JSON.parse(json) as { exp: number };
     return typeof exp === "number" && exp > Date.now();
   } catch {
