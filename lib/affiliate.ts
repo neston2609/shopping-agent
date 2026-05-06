@@ -1,64 +1,57 @@
+/**
+ * Affiliate link generators.
+ *
+ * IDs are read from the database (admin_config table) so they can be updated
+ * via the admin dashboard without redeploying.  .env values are used as
+ * fallbacks only (e.g. before the first DB save).
+ */
 import type { Platform } from "@/types/product";
+import { getConfig } from "@/lib/admin-config";
 
-// ============================================================
-// TODO: Replace placeholder IDs with your real affiliate IDs
-//       after joining the programs below.
+// ─── Shopee TH ────────────────────────────────────────────────────────────────
+// Sign up: https://affiliate.shopee.co.th/
 //
-//  Shopee TH Affiliate: https://affiliate.shopee.co.th/
-//  Lazada TH Affiliate: https://www.lazada.co.th/lazada-affiliate-program/
-// ============================================================
+// TODO: Once you have API access from Shopee, replace the URL-param approach
+//       below with a real short-link API call:
+//       POST https://affiliate.shopee.co.th/api/v2/offer/generate_affiliate_link
+export async function generateShopeeAffiliateLink(originalUrl: string): Promise<string> {
+  const affiliateId = await getConfig(
+    "shopee_affiliate_id",
+    process.env.SHOPEE_AFFILIATE_ID ?? ""
+  );
 
-const SHOPEE_AFFILIATE_ID =
-  process.env.SHOPEE_AFFILIATE_ID ?? "YOUR_SHOPEE_AFFILIATE_ID";
+  if (!affiliateId) return originalUrl; // No ID configured yet → passthrough
 
-const LAZADA_APP_KEY =
-  process.env.LAZADA_AFFILIATE_APP_KEY ?? "YOUR_LAZADA_APP_KEY";
-
-const LAZADA_TRACKING_ID =
-  process.env.LAZADA_AFFILIATE_TRACKING_ID ?? "YOUR_LAZADA_TRACKING_ID";
-
-// ----------------------------------------------------------
-// Shopee TH affiliate link
-// Format: https://s.shopee.co.th/<affiliate_id>?smtt=0.0.9
-// Then deep-link to the product via `u` param
-// ----------------------------------------------------------
-export function generateShopeeAffiliateLink(originalUrl: string): string {
-  // TODO: Shopee may require you to generate short links via their API.
-  // Once you have API access, replace this with a real API call.
-  // Docs: https://affiliate.shopee.co.th/offer/generate_affiliate_link
-  //
-  // Interim approach: append affiliate sub-id as a query param.
   try {
     const url = new URL(originalUrl);
     url.searchParams.set("smtt", "0.0.9");
-    url.searchParams.set("affiliate_id", SHOPEE_AFFILIATE_ID);
+    url.searchParams.set("affiliate_id", affiliateId);
     return url.toString();
   } catch {
     return originalUrl;
   }
 }
 
-// ----------------------------------------------------------
-// Lazada TH affiliate link
-// Lazada uses AccessTrade or their own affiliate portal.
-// Standard format:
-//   https://c.lazada.co.th/t/c.<APP_KEY>.<TRACKING_ID>/?url=<encoded_product_url>
-// ----------------------------------------------------------
-export function generateLazadaAffiliateLink(originalUrl: string): string {
-  // TODO: Replace with actual Lazada affiliate deep-link format once you
-  // have your app key and tracking ID from the Lazada Affiliate Portal.
-  // Docs: https://affiliate.lazada.co.th/
+// ─── Lazada TH ────────────────────────────────────────────────────────────────
+// Sign up: https://www.lazada.co.th/lazada-affiliate-program/
+// Deep-link format: https://c.lazada.co.th/t/c.<APP_KEY>.<TRACKING_ID>/?url=<encoded>
+export async function generateLazadaAffiliateLink(originalUrl: string): Promise<string> {
+  const [appKey, trackingId] = await Promise.all([
+    getConfig("lazada_app_key", process.env.LAZADA_AFFILIATE_APP_KEY ?? ""),
+    getConfig("lazada_tracking_id", process.env.LAZADA_AFFILIATE_TRACKING_ID ?? ""),
+  ]);
+
+  if (!appKey || !trackingId) return originalUrl; // Not configured yet
+
   const encodedUrl = encodeURIComponent(originalUrl);
-  return `https://c.lazada.co.th/t/c.${LAZADA_APP_KEY}.${LAZADA_TRACKING_ID}/?url=${encodedUrl}`;
+  return `https://c.lazada.co.th/t/c.${appKey}.${trackingId}/?url=${encodedUrl}`;
 }
 
-// ----------------------------------------------------------
-// Unified entry point used throughout the app
-// ----------------------------------------------------------
-export function generateAffiliateLink(
+// ─── Unified entry point ──────────────────────────────────────────────────────
+export async function generateAffiliateLink(
   source: Platform,
   url: string
-): string {
+): Promise<string> {
   if (source === "Shopee") return generateShopeeAffiliateLink(url);
   if (source === "Lazada") return generateLazadaAffiliateLink(url);
   return url;

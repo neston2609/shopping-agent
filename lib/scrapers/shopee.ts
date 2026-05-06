@@ -103,11 +103,13 @@ export async function scrapeShopee(keyword: string): Promise<RawProduct[]> {
         );
     }, MAX_RESULTS);
 
-    return products.map((p) => ({
-      ...p,
-      source: "Shopee" as const,
-      affiliateUrl: generateShopeeAffiliateLink(p.url),
-    }));
+    return Promise.all(
+      products.map(async (p) => ({
+        ...p,
+        source: "Shopee" as const,
+        affiliateUrl: await generateShopeeAffiliateLink(p.url),
+      }))
+    );
   } catch (err) {
     console.error("[shopee-scraper] Error:", err);
     return [];

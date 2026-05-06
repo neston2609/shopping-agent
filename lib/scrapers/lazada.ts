@@ -126,11 +126,13 @@ export async function scrapeLazada(keyword: string): Promise<RawProduct[]> {
         );
     }, MAX_RESULTS);
 
-    return products.map((p) => ({
-      ...p,
-      source: "Lazada" as const,
-      affiliateUrl: generateLazadaAffiliateLink(p.url),
-    }));
+    return Promise.all(
+      products.map(async (p) => ({
+        ...p,
+        source: "Lazada" as const,
+        affiliateUrl: await generateLazadaAffiliateLink(p.url),
+      }))
+    );
   } catch (err) {
     console.error("[lazada-scraper] Error:", err);
     return [];
