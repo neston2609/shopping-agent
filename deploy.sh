@@ -1,7 +1,17 @@
-@echo off
+#!/bin/bash
+set -e
 
-git add .
+echo "==> Pulling latest code..."
+git pull origin main
 
-git commit -m "deploy from HOST at DATE TIME"
+echo "==> Installing dependencies..."
+npm ci --omit=dev
 
-git push origin main --force-with-lease
+echo "==> Building..."
+npm run build
+
+echo "==> Restarting PM2..."
+pm2 restart ecosystem.config.js --update-env
+
+echo "==> Done."
+pm2 status

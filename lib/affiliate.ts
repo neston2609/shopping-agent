@@ -33,18 +33,26 @@ export async function generateShopeeAffiliateLink(originalUrl: string): Promise<
 }
 
 // ─── Lazada TH ────────────────────────────────────────────────────────────────
-// Sign up: https://www.lazada.co.th/lazada-affiliate-program/
-// Deep-link format: https://c.lazada.co.th/t/c.<APP_KEY>.<TRACKING_ID>/?url=<encoded>
+// Affiliate tracking: append ?sub_aff_id=<TRACKING_ID> to the product URL.
+// Example result: https://www.lazada.co.th/products/xxx.html?sub_aff_id=150041147
+//
+// The tracking ID is the numeric publisher/sub-affiliate ID shown in your
+// Lazada affiliate dashboard.  Stored as lazada_tracking_id in admin_config.
 export async function generateLazadaAffiliateLink(originalUrl: string): Promise<string> {
-  const [appKey, trackingId] = await Promise.all([
-    getConfig("lazada_app_key", process.env.LAZADA_AFFILIATE_APP_KEY ?? ""),
-    getConfig("lazada_tracking_id", process.env.LAZADA_AFFILIATE_TRACKING_ID ?? ""),
-  ]);
+  const trackingId = await getConfig(
+    "lazada_tracking_id",
+    process.env.LAZADA_AFFILIATE_TRACKING_ID ?? ""
+  );
 
-  if (!appKey || !trackingId) return originalUrl; // Not configured yet
+  if (!trackingId) return originalUrl; // Not configured yet
 
-  const encodedUrl = encodeURIComponent(originalUrl);
-  return `https://c.lazada.co.th/t/c.${appKey}.${trackingId}/?url=${encodedUrl}`;
+  try {
+    const url = new URL(originalUrl);
+    url.searchParams.set("sub_aff_id", trackingId);
+    return url.toString();
+  } catch {
+    return originalUrl;
+  }
 }
 
 // ─── Unified entry point ──────────────────────────────────────────────────────
